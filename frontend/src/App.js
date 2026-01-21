@@ -1,14 +1,30 @@
 // frontend/src/App.js
-import React, { useState ,useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate , useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+} from "react-router-dom";
 
-import './App.css';
-import ModeSelector from './components/ModeSelector';
-import StoryEditor from './components/StoryEditor';
-import Login from './components/Auth/Login';
-import Signup from './components/Auth/Signup';
+import "./App.css";
+import ModeSelector from "./components/ModeSelector";
+import StoryEditor from "./components/StoryEditor";
+import Login from "./components/Auth/Login";
+import Signup from "./components/Auth/Signup";
 
-function MainApp({ user, mode, setMode, outputFormat, setOutputFormat, story, setStory, currentScene, setCurrentScene, onReset }) {
+function MainApp({
+  mode,
+  setMode,
+  outputFormat,
+  setOutputFormat,
+  story,
+  setStory,
+  currentScene,
+  setCurrentScene,
+  onReset,
+}) {
   return (
     <div className="App">
       <header className="App-header">
@@ -17,10 +33,12 @@ function MainApp({ user, mode, setMode, outputFormat, setOutputFormat, story, se
       </header>
 
       {!mode ? (
-        <ModeSelector onStart={(selectedMode, selectedFormat) => {
-          setMode(selectedMode);
-          setOutputFormat(selectedFormat);
-        }} />
+        <ModeSelector
+          onStart={(selectedMode, selectedFormat) => {
+            setMode(selectedMode);
+            setOutputFormat(selectedFormat);
+          }}
+        />
       ) : (
         <StoryEditor
           mode={mode}
@@ -36,125 +54,127 @@ function MainApp({ user, mode, setMode, outputFormat, setOutputFormat, story, se
   );
 }
 
-
-// Floating buttons(Dark Mode Toggle, logout, ) can be added here
+// Floating buttons (Dark mode + Logout)
 function FloatingButtons({ user, setUser }) {
   const navigate = useNavigate();
 
   const toggleDarkMode = () => {
-    if (!user) return;
     const updatedUser = { ...user, darkMode: !user.darkMode };
     setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
-    document.body.classList.toggle('dark', updatedUser.darkMode);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+    document.body.classList.toggle("dark", updatedUser.darkMode);
   };
 
-
-
-const handleLogout = () => {
+  const handleLogout = () => {
     setUser(null);
-    localStorage.removeItem('user');
-    document.body.classList.remove('dark');
-    navigate('/login');
+    localStorage.removeItem("user");
+    document.body.classList.remove("dark");
+    navigate("/login");
   };
+
   return (
-    <div>
-      
+    <>
       <button
         onClick={toggleDarkMode}
-        style={{ position: 'fixed', bottom: 70, right: 20, padding: '10px 15px',borderRadius:'25px', border:'none', backgroundColor:'#539ff1ff', color:'#fff', cursor:'pointer', boxShadow:'0 3px 6px rgba(0, 0, 0, 0.2)' }}
+        style={{
+          position: "fixed",
+          bottom: 70,
+          right: 20,
+          padding: "10px 15px",
+          borderRadius: "25px",
+          border: "none",
+          backgroundColor: "#539ff1",
+          color: "#fff",
+          cursor: "pointer",
+        }}
       >
-        {user.darkMode ? 'Light Mode' : 'Dark Mode'}
+        {user.darkMode ? "Light Mode" : "Dark Mode"}
       </button>
 
       <button
         onClick={handleLogout}
-        
-        style={{ position: 'fixed', bottom: 20, right: 20, padding: '10px 15px',borderRadius:'25px', border:'none', backgroundColor:'#f15353ff', color:'#fff', cursor:'pointer', boxShadow:'0 3px 6px rgba(0, 0, 0, 0.2)' }}
-        
+        style={{
+          position: "fixed",
+          bottom: 20,
+          right: 20,
+          padding: "10px 15px",
+          borderRadius: "25px",
+          border: "none",
+          backgroundColor: "#f15353",
+          color: "#fff",
+          cursor: "pointer",
+        }}
       >
         Logout
       </button>
-    </div>
+    </>
   );
 }
 
-
 function App() {
-  const [user, setUser] = useState(null); // global auth state
+  const [user, setUser] = useState(null);
   const [mode, setMode] = useState(null);
-  const [outputFormat, setOutputFormat] = useState('text');
+  const [outputFormat, setOutputFormat] = useState("text");
   const [story, setStory] = useState([]);
-  const [currentScene, setCurrentScene] = useState('');
+  const [currentScene, setCurrentScene] = useState("");
 
-  // Loading user from localStorage
+  // Load user on refresh
   useEffect(() => {
-    const savedUser = JSON.parse(localStorage.getItem('user'));
+    const savedUser = JSON.parse(localStorage.getItem("user"));
     if (savedUser) {
       setUser(savedUser);
-      if (savedUser.darkMode) document.body.classList.add('dark');
+      if (savedUser.darkMode) {
+        document.body.classList.add("dark");
+      }
     }
   }, []);
-  
-
-  // // optional: persist dark mode on reload
-  // useEffect(() => {
-  //   const savedUser = JSON.parse(localStorage.getItem('user'));
-  //   if (savedUser) setUser(savedUser);
-  // }, []);
 
   const handleReset = () => {
     setMode(null);
-    setOutputFormat('text');
+    setOutputFormat("text");
     setStory([]);
-    setCurrentScene('');
+    setCurrentScene("");
   };
 
-  // const toggleDarkMode = () => {
-  //   if (!user) return;
-  //   const updatedUser = { ...user, darkMode: !user.darkMode };
-  //   setUser(updatedUser);
-  //   localStorage.setItem('user', JSON.stringify(updatedUser));
-  // };
-
   return (
-    <Router> 
-
+    <Router>
       <Routes>
-        <Route path="/" element={<MainApp
-          user={user}
-          mode={mode}
-          setMode={setMode}
-          outputFormat={outputFormat}
-          setOutputFormat={setOutputFormat}
-          story={story}
-          setStory={setStory}
-          currentScene={currentScene}
-          setCurrentScene={setCurrentScene}
-          onReset={handleReset}
-        />} />
+        {/* 🔐 PROTECTED HOME ROUTE */}
+        <Route
+          path="/"
+          element={
+            user ? (
+              <MainApp
+                mode={mode}
+                setMode={setMode}
+                outputFormat={outputFormat}
+                setOutputFormat={setOutputFormat}
+                story={story}
+                setStory={setStory}
+                currentScene={currentScene}
+                setCurrentScene={setCurrentScene}
+                onReset={handleReset}
+              />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
 
         <Route
           path="/login"
-          element={
-            user ? <Navigate to="/" /> : <Login setUser={setUser} />
-          }
+          element={user ? <Navigate to="/" /> : <Login setUser={setUser} />}
         />
 
         <Route
           path="/signup"
-          element={
-            user ? <Navigate to="/" /> : <Signup setUser={setUser} />
-          }
+          element={user ? <Navigate to="/" /> : <Signup setUser={setUser} />}
         />
-        
       </Routes>
 
-      {user && <FloatingButtons user={user} setUser={setUser} /> } 
-
+      {user && <FloatingButtons user={user} setUser={setUser} />}
     </Router>
   );
 }
 
 export default App;
-
