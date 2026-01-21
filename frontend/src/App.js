@@ -1,14 +1,22 @@
 // frontend/src/App.js
 import React, { useState } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { useTranslation } from './translations/translations';
 import './App.css';
+import Auth from './components/Auth';
 import ModeSelector from './components/ModeSelector';
 import StoryEditor from './components/StoryEditor';
+import Settings from './components/Settings';
 
-function App() {
+function AppContent() {
+  const { isAuthenticated, language, darkMode, user } = useAuth();
+  const t = useTranslation(language);
+  
   const [mode, setMode] = useState(null);
   const [outputFormat, setOutputFormat] = useState('text');
   const [story, setStory] = useState([]);
   const [currentScene, setCurrentScene] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
 
   const handleStart = (selectedMode, selectedFormat) => {
     setMode(selectedMode);
@@ -22,11 +30,34 @@ function App() {
     setCurrentScene('');
   };
 
+  if (!isAuthenticated) {
+    return (
+      <div className="App">
+        <header className="App-header">
+          <h1> {t('appTitle')}</h1>
+          <p>{t('appSubtitle')}</p>
+        </header>
+        <Auth />
+      </div>
+    );
+  }
+
   return (
     <div className="App">
       <header className="App-header">
-        <h1> TaleTeller</h1>
-        <p>The story Co writer</p>
+        <h1>📖 {t('appTitle')}</h1>
+        <p>{t('appSubtitle')}</p>
+        <div className="header-actions">
+          <span className="user-welcome">
+            👋 {user?.username}
+          </span>
+          <button 
+            className="settings-icon-button" 
+            onClick={() => setShowSettings(true)}
+          >
+            ⚙️ {t('settings')}
+          </button>
+        </div>
       </header>
 
       {!mode ? (
@@ -42,7 +73,17 @@ function App() {
           onReset={handleReset}
         />
       )}
+
+      {showSettings && <Settings onClose={() => setShowSettings(false)} />}
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
