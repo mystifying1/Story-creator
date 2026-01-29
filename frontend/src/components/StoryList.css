@@ -1,0 +1,228 @@
+/* frontend/src/components/StoryList.css */
+.story-list-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.story-list-modal {
+  background: white;
+  border-radius: 20px;
+  padding: 30px;
+  max-width: 900px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .story-list-modal {
+  background: #2d3748;
+  color: #e2e8f0;
+}
+
+.story-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e1e8ed;
+}
+
+.dark-mode .story-list-header {
+  border-bottom-color: #4a5568;
+}
+
+.story-list-header h2 {
+  margin: 0;
+  color: #333;
+}
+
+.dark-mode .story-list-header h2 {
+  color: #e2e8f0;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.dark-mode .close-button {
+  color: #a0aec0;
+}
+
+.close-button:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.dark-mode .close-button:hover {
+  background: #4a5568;
+  color: #e2e8f0;
+}
+
+.story-list-content {
+  min-height: 200px;
+}
+
+.loading-text,
+.no-stories {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.dark-mode .loading-text,
+.dark-mode .no-stories {
+  color: #a0aec0;
+}
+
+.stories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.story-card {
+  background: #f8f9fa;
+  border-radius: 15px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.dark-mode .story-card {
+  background: #1a202c;
+}
+
+.story-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 5px 20px rgba(102, 126, 234, 0.2);
+}
+
+.story-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+  gap: 10px;
+}
+
+.story-card-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.2rem;
+  flex: 1;
+  word-break: break-word;
+}
+
+.dark-mode .story-card-header h3 {
+  color: #e2e8f0;
+}
+
+.story-mode-badge {
+  background: #667eea;
+  color: white;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.story-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 15px;
+}
+
+.story-card-info p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.dark-mode .story-card-info p {
+  color: #cbd5e0;
+}
+
+.story-preview {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+  color: #555;
+  line-height: 1.6;
+  min-height: 80px;
+}
+
+.dark-mode .story-preview {
+  background: #2d3748;
+  color: #cbd5e0;
+}
+
+.story-card-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.load-button,
+.delete-button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.load-button {
+  background: #667eea;
+  color: white;
+}
+
+.load-button:hover {
+  background: #764ba2;
+  transform: translateY(-2px);
+}
+
+.delete-button {
+  background: #dc3545;
+  color: white;
+}
+
+.delete-button:hover {
+  background: #c82333;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .stories-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .story-card-actions {
+    flex-direction: column;
+  }
+}
