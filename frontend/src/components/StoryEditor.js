@@ -1,17 +1,163 @@
-// frontend/src/components/StoryEditor.js
-import React, { useState } from 'react';
+// frontend/src/components/StoryEditor.js - Enhanced Version
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import { useTranslation } from '../translations/translations';
 import './StoryEditor.css';
 import { jsPDF } from 'jspdf';
 
 const API_URL = 'http://localhost:5000/api';
 
-const StoryEditor = ({ mode, outputFormat, story, setStory, currentScene, setCurrentScene, onReset }) => {
-  const [inputText, setInputText] = useState('');
+const StoryEditor = ({ 
+  mode, 
+  outputFormat, 
+  initialStory = null,
+  onReset 
+}) => {
+  const { language: uiLanguage } = useAuth();
+  const t = useTranslation(uiLanguage);
+  
+  const [storyId, setStoryId] = useState(initialStory?._id || null);
+  const [story, setStory] = useState(initialStory?.scenes || []);
+  const [storyTitle, setStoryTitle] = useState(initialStory?.title || 'Untitled Story');
+  const [currentScene, setCurrentScene] = useState(initialStory?.currentDraft?.text || '');
+  const [inputText, setInputText] = useState(initialStory?.currentDraft?.text || '');
+  const [languageName, setLanguageName] = useState('English');
   const [suggestions, setSuggestions] = useState(null);
   const [loading, setLoading] = useState(false);
   const [choices, setChoices] = useState(null);
   const [showChoices, setShowChoices] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState('');
+  const [lastSaved, setLastSaved] = useState(initialStory?.currentDraft?.lastSaved || null);
+  
+  const autoSaveTimer = useRef(null);
+  const hasUnsavedChanges = useRef(false);
+  const initialDraftText = useRef(initialStory?.currentDraft?.text || '');
+
+  // Language code to name mapping
+  const languageNames = {
+    'eng': 'English',
+    'spa': 'Spanish',
+    'fra': 'French',
+    'deu': 'German',
+    'ita': 'Italian',
+    'por': 'Portuguese',
+    'rus': 'Russian',
+    'jpn': 'Japanese',
+    'kor': 'Korean',
+    'cmn': 'Chinese',
+    'hin': 'Hindi',
+    'arb': 'Arabic',
+    'ben': 'Bengali',
+    'tel': 'Telugu',
+    'tam': 'Tamil',
+    'mar': 'Marathi',
+    'urd': 'Urdu'
+  };
+
+  // Create story on mount if new
+  useEffect(() => {
+    const createNewStory = async () => {
+      try {
+        const response = await axios.post(`${API_URL}/stories`, {
+          title: storyTitle,
+          mode: mode,
+          initialText: inputText
+        });
+        setStoryId(response.data.story._id);
+      } catch (error) {
+        console.error('Create story error:', error);
+      }
+    };
+
+    if (!storyId) {
+      createNewStory();
+    }
+  }, [storyId, storyTitle, mode, inputText]);
+
+  // Auto-save draft while typing
+  useEffect(() => {
+    if (!storyId) return;
+
+    // Clear existing timer
+    if (autoSaveTimer.current) {
+      clearTimeout(autoSaveTimer.current);
+    }
+
+    // Set new timer (save after 2 seconds of inactivity)
+    if (inputText && inputText !== initialDraftText.current) {
+      hasUnsavedChanges.current = true;
+      setAutoSaveStatus('⏳ Saving...');
+      
+      autoSaveTimer.current = setTimeout(async () => {
+        if (!storyId || !inputText.trim()) return;
+
+        try {
+          await axios.put(`${API_URL}/stories/${storyId}/draft`, {
+            draftText: inputText
+          });
+          
+          hasUnsavedChanges.current = false;
+          setLastSaved(new Date());
+          setAutoSaveStatus('✅ Saved');
+          
+          setTimeout(() => setAutoSaveStatus(''), 2000);
+        } catch (error) {
+          console.error('Auto-save error:', error);
+          setAutoSaveStatus('❌ Save failed');
+        }
+      }, 2000);
+    }
+
+    return () => {
+      if (autoSaveTimer.current) {
+        clearTimeout(autoSaveTimer.current);
+      }
+    };
+  }, [inputText, storyId]);
+
+  // Detect language when user types
+  useEffect(() => {
+    const detectLanguageFromText = async (text) => {
+      try {
+        const response = await axios.post(`${API_URL}/detect-language`, { text });
+        setLanguageName(response.data.languageName);
+      } catch (error) {
+        console.error('Language detection error:', error);
+      }
+    };
+
+    if (inputText.trim().length > 50) {
+      detectLanguageFromText(inputText);
+    }
+  }, [inputText]);
+
+  // Save before unmount
+  useEffect(() => {
+    const saveDraftOnUnmount = async () => {
+      if (!storyId || !inputText) return;
+
+      try {
+        await axios.put(`${API_URL}/stories/${storyId}/draft`, {
+          draftText: inputText
+        });
+      } catch (error) {
+        console.error('Save on unmount error:', error);
+      }
+    };
+
+    return () => {
+      if (hasUnsavedChanges.current && storyId && inputText) {
+        saveDraftOnUnmount();
+      }
+    };
+  }, [storyId, inputText]);
+
+
+
+
+
+
 
   const handleGrammarCheck = async () => {
     if (!inputText.trim()) return;
@@ -20,9 +166,15 @@ const StoryEditor = ({ mode, outputFormat, story, setStory, currentScene, setCur
     try {
       const response = await axios.post(`${API_URL}/grammar-check`, {
         text: inputText,
-        mode: mode
+        mode: mode,
+        storyId: storyId
       });
       setSuggestions(response.data);
+      
+      // Update detected language from response
+      if (response.data.detectedLanguage) {
+        setLanguageName(response.data.detectedLanguage);
+      }
     } catch (error) {
       console.error('Error checking grammar:', error);
       alert('Failed to check grammar. Make sure backend is running!');
@@ -35,22 +187,33 @@ const StoryEditor = ({ mode, outputFormat, story, setStory, currentScene, setCur
     if (suggestions && suggestions.improvedVersion) {
       setInputText(suggestions.improvedVersion);
       setSuggestions(null);
+      hasUnsavedChanges.current = true;
     }
   };
 
-  const handleAddToStory = () => {
+  const handleAddToStory = async () => {
     if (!inputText.trim()) return;
 
-    const newScene = {
-      id: Date.now(),
-      text: inputText,
-      timestamp: new Date().toISOString()
-    };
+    setLoading(true);
+    try {
+      // Add scene to story
+      const response = await axios.post(`${API_URL}/stories/${storyId}/scenes`, {
+        text: inputText,
+        fromChoice: null
+      });
 
-    setStory([...story, newScene]);
-    setCurrentScene(inputText);
-    setInputText('');
-    setSuggestions(null);
+      setStory(response.data.story.scenes);
+      setCurrentScene(inputText);
+      setInputText('');
+      setSuggestions(null);
+      hasUnsavedChanges.current = false;
+      setAutoSaveStatus('');
+    } catch (error) {
+      console.error('Add scene error:', error);
+      alert('Failed to add scene');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGenerateChoices = async () => {
@@ -66,9 +229,15 @@ const StoryEditor = ({ mode, outputFormat, story, setStory, currentScene, setCur
       const response = await axios.post(`${API_URL}/generate-choices`, {
         storyContext,
         mode,
-        currentScene
+        currentScene,
+        storyId
       });
       setChoices(response.data.choices);
+      
+      // Update language from response
+      if (response.data.detectedLanguage) {
+        setLanguageName(response.data.detectedLanguage);
+      }
     } catch (error) {
       console.error('Error generating choices:', error);
       alert('Failed to generate choices. Make sure backend is running!');
@@ -84,25 +253,46 @@ const StoryEditor = ({ mode, outputFormat, story, setStory, currentScene, setCur
       const response = await axios.post(`${API_URL}/continue-scene`, {
         storyContext,
         mode,
-        selectedChoice: choice.description
+        selectedChoice: choice.description,
+        storyId
       });
 
-      const newScene = {
-        id: Date.now(),
+      // Add the generated scene
+      const addResponse = await axios.post(`${API_URL}/stories/${storyId}/scenes`, {
         text: response.data.continuation,
-        timestamp: new Date().toISOString(),
         fromChoice: choice.title
-      };
+      });
 
-      setStory([...story, newScene]);
+      setStory(addResponse.data.story.scenes);
       setCurrentScene(response.data.continuation);
       setShowChoices(false);
       setChoices(null);
+      
+      // Update language
+      if (response.data.detectedLanguage) {
+        setLanguageName(response.data.detectedLanguage);
+      }
     } catch (error) {
       console.error('Error continuing scene:', error);
       alert('Failed to continue scene. Make sure backend is running!');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateTitle = async (newTitle) => {
+    setStoryTitle(newTitle);
+    
+    if (storyId && newTitle.trim()) {
+      try {
+        await axios.put(`${API_URL}/stories/${storyId}`, {
+          title: newTitle,
+          scenes: story,
+          status: story.length > 0 ? 'in-progress' : 'draft'
+        });
+      } catch (error) {
+        console.error('Update title error:', error);
+      }
     }
   };
 
@@ -115,24 +305,26 @@ const StoryEditor = ({ mode, outputFormat, story, setStory, currentScene, setCur
 
     // Title
     doc.setFontSize(20);
-    doc.text(`${mode.toUpperCase()} Story`, margin, y);
+    doc.text(storyTitle, margin, y);
+    y += 10;
+    
+    // Language and mode info
+    doc.setFontSize(10);
+    doc.text(`Mode: ${mode} | Language: ${languageName}`, margin, y);
     y += 15;
 
     // Story content
     doc.setFontSize(12);
     story.forEach((scene, index) => {
-      // Check if we need a new page
       if (y > 270) {
         doc.addPage();
         y = 20;
       }
 
-      // Add scene divider
       doc.setFontSize(14);
       doc.text(`Scene ${index + 1}`, margin, y);
       y += 10;
 
-      // Add scene text
       doc.setFontSize(11);
       const lines = doc.splitTextToSize(scene.text, maxWidth);
       lines.forEach(line => {
@@ -146,29 +338,59 @@ const StoryEditor = ({ mode, outputFormat, story, setStory, currentScene, setCur
       y += 10;
     });
 
-    doc.save(`${mode}-story.pdf`);
+    doc.save(`${storyTitle.replace(/[^a-z0-9]/gi, '_')}.pdf`);
+  };
+
+  const formatLastSaved = () => {
+    if (!lastSaved) return '';
+    const date = new Date(lastSaved);
+    const now = new Date();
+    const diff = Math.floor((now - date) / 1000);
+    
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+    return date.toLocaleTimeString();
   };
 
   return (
     <div className="story-editor">
       <div className="editor-header">
-        <h2>✍️ Writing in {mode.toUpperCase()} mode</h2>
-        <button onClick={onReset} className="reset-button">← Back to Menu</button>
+        <div className="header-left">
+          <input
+            type="text"
+            value={storyTitle}
+            onChange={(e) => handleUpdateTitle(e.target.value)}
+            className="story-title-input"
+            placeholder="Story Title"
+          />
+          <div className="story-meta">
+            <span className="mode-badge">✍️ {mode}</span>
+            <span className="language-badge">🌍 {languageName}</span>
+            {autoSaveStatus && <span className="auto-save-status">{autoSaveStatus}</span>}
+            {lastSaved && !autoSaveStatus && (
+              <span className="last-saved">Last saved {formatLastSaved()}</span>
+            )}
+          </div>
+        </div>
+        <button onClick={onReset} className="reset-button">← {t('backToMenu')}</button>
       </div>
 
       <div className="editor-layout">
         {/* Left: Story Draft */}
         <div className="story-draft">
-          <h3> Your Story</h3>
+          <h3>📚 {t('yourStory')}</h3>
           <div className="story-content">
             {story.length === 0 ? (
-              <p className="empty-state">Your story will appear here as you write...</p>
+              <p className="empty-state">{t('emptyStory')}</p>
             ) : (
               story.map((scene, index) => (
-                <div key={scene.id} className="scene">
+                <div key={scene._id || index} className="scene">
                   <div className="scene-header">
                     <span className="scene-number">Scene {index + 1}</span>
                     {scene.fromChoice && <span className="scene-choice">→ {scene.fromChoice}</span>}
+                    {scene.language && (
+                      <span className="scene-language">🌍 {languageNames[scene.language] || scene.language}</span>
+                    )}
                   </div>
                   <p>{scene.text}</p>
                 </div>
@@ -179,10 +401,10 @@ const StoryEditor = ({ mode, outputFormat, story, setStory, currentScene, setCur
           {story.length > 0 && (
             <div className="story-actions">
               <button onClick={handleDownloadPDF} className="download-button">
-                 Download PDF
+                📥 {t('downloadPDF')}
               </button>
               <button onClick={handleGenerateChoices} className="choices-button" disabled={loading}>
-                {loading ? ' Generating...' : ' Generate Plot Choices'}
+                {loading ? t('generating') : `🎲 ${t('generateChoices')}`}
               </button>
             </div>
           )}
@@ -192,11 +414,21 @@ const StoryEditor = ({ mode, outputFormat, story, setStory, currentScene, setCur
         <div className="editor-panel">
           {!showChoices ? (
             <>
-              <h3> Write Scene</h3>
+              <div className="editor-panel-header">
+                <h3>✏️ {t('writeScene')}</h3>
+                <div className="language-info">
+                  <span className="detected-lang-label">Writing in:</span>
+                  <span className="detected-lang-value">{languageName}</span>
+                  <span className="lang-hint">
+                    {languageName !== 'English' && '✨ AI will respond in the same language'}
+                  </span>
+                </div>
+              </div>
+              
               <textarea
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="Start writing your scene here..."
+                placeholder={t('storyStartPlaceholder')}
                 className="scene-input"
                 rows="10"
               />
@@ -207,29 +439,29 @@ const StoryEditor = ({ mode, outputFormat, story, setStory, currentScene, setCur
                   disabled={loading || !inputText.trim()}
                   className="check-button"
                 >
-                  {loading ? ' Checking...' : ' Check & Improve'}
+                  {loading ? t('checking') : `🔍 ${t('checkImprove')}`}
                 </button>
                 <button 
                   onClick={handleAddToStory}
                   disabled={!inputText.trim()}
                   className="add-button"
                 >
-                   Add to Story
+                  ✅ {t('addToStory')}
                 </button>
               </div>
 
               {suggestions && (
                 <div className="suggestions-panel">
-                  <h4> AI Suggestions</h4>
+                  <h4>💡 {t('aiSuggestions')}</h4>
                   {suggestions.hasIssues ? (
                     <>
                       <div className="improved-text">
-                        <h5>Improved Version:</h5>
+                        <h5>{t('improvedVersion')}</h5>
                         <p>{suggestions.improvedVersion}</p>
                       </div>
                       {suggestions.suggestions.length > 0 && (
                         <div className="suggestion-list">
-                          <h5>Specific Changes:</h5>
+                          <h5>{t('specificChanges')}</h5>
                           {suggestions.suggestions.map((sug, idx) => (
                             <div key={idx} className="suggestion-item">
                               <p><strong>Original:</strong> {sug.original}</p>
@@ -241,24 +473,24 @@ const StoryEditor = ({ mode, outputFormat, story, setStory, currentScene, setCur
                       )}
                       <div className="suggestion-actions">
                         <button onClick={handleAcceptSuggestion} className="accept-button">
-                          ✅ Accept Improvements
+                          ✅ {t('acceptImprovements')}
                         </button>
                         <button onClick={() => setSuggestions(null)} className="dismiss-button">
-                          ❌ Keep Original
+                          ❌ {t('keepOriginal')}
                         </button>
                       </div>
                     </>
                   ) : (
-                    <p className="no-issues">✨ Looks great! No issues found.</p>
+                    <p className="no-issues">✨ {t('looksGreat')}</p>
                   )}
                 </div>
               )}
             </>
           ) : (
             <div className="choices-panel">
-              <h3> Choose Your Path</h3>
+              <h3>🎲 {t('chooseYourPath')}</h3>
               {loading ? (
-                <p className="loading">Generating choices...</p>
+                <p className="loading">{t('generating')}</p>
               ) : choices ? (
                 <>
                   <div className="choices-list">
@@ -270,7 +502,7 @@ const StoryEditor = ({ mode, outputFormat, story, setStory, currentScene, setCur
                     ))}
                   </div>
                   <button onClick={() => setShowChoices(false)} className="back-button">
-                    ← Back to Editor
+                    ← {t('backToEditor')}
                   </button>
                 </>
               ) : null}
