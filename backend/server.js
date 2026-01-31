@@ -98,12 +98,21 @@ const languageMap = {
 
 // Language Detection Function
 function detectLanguage(text) {
-  if (!text || text.trim().length < 10) {
+  if (!text || text.trim().length < 3) {
     return { code: 'eng', name: 'English' };
   }
-  
+
   try {
-    const langCode = franc(text);
+    const trimmed = text.trim();
+
+    // Heuristic: if the text contains Devanagari script characters, treat as Hindi
+    // Devanagari range: \u0900 - \u097F
+    if (/[\u0900-\u097F]/.test(trimmed)) {
+      return { code: 'hin', name: 'Hindi' };
+    }
+
+    // Fallback to franc detection
+    const langCode = franc(trimmed);
     const langName = languageMap[langCode] || 'English';
     return { code: langCode, name: langName };
   } catch (error) {

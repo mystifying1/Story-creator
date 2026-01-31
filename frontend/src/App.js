@@ -91,25 +91,25 @@ function AppContent() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1> {t('appTitle')}</h1>
+        <h1>📖 {t('appTitle')}</h1>
         <p>{t('appSubtitle')}</p>
         <div className="header-actions">
           <span className="user-welcome">
-             {user?.username}
+            👋 {user?.username}
           </span>
           {!mode && (
             <button 
               className="story-list-button" 
               onClick={() => setShowStoryList(true)}
             >
-               {t('myStories')}
+              📚 {t('myStories')}
             </button>
           )}
           <button 
             className="settings-icon-button" 
             onClick={() => setShowSettings(true)}
           >
-             {t('settings')}
+            ⚙️ {t('settings')}
           </button>
         </div>
       </header>
@@ -118,7 +118,7 @@ function AppContent() {
       {showResumePrompt && lastActiveStory && !mode && (
         <div className="resume-prompt-overlay">
           <div className="resume-prompt-modal">
-            <h2> Continue Your Story?</h2>
+            <h2>📖 Continue Your Story?</h2>
             <div className="resume-story-info">
               <h3>{lastActiveStory.title}</h3>
               <p className="story-mode">Mode: {lastActiveStory.mode}</p>
@@ -127,16 +127,16 @@ function AppContent() {
               </p>
               {lastActiveStory.currentDraft?.text && (
                 <p className="draft-info">
-                   You have an unsaved draft
+                  💾 You have an unsaved draft
                 </p>
               )}
             </div>
             <div className="resume-actions">
               <button className="resume-button" onClick={handleResumeStory}>
-                 Continue Writing
+                ✅ Continue Writing
               </button>
               <button className="new-story-button" onClick={handleStartNew}>
-                 Start New Story
+                ✨ Start New Story
               </button>
             </div>
           </div>

@@ -1,4 +1,4 @@
-// frontend/src/components/StoryEditor.js - Enhanced Version
+// frontend/src/components/StoryEditor.js - Fixed Version
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -29,30 +29,19 @@ const StoryEditor = ({
   const [showChoices, setShowChoices] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState('');
   const [lastSaved, setLastSaved] = useState(initialStory?.currentDraft?.lastSaved || null);
+  const [editingSceneId, setEditingSceneId] = useState(null);
+  const [editedText, setEditedText] = useState('');
   
   const autoSaveTimer = useRef(null);
   const hasUnsavedChanges = useRef(false);
   const initialDraftText = useRef(initialStory?.currentDraft?.text || '');
 
-  // Language code to name mapping
+  // Language code to name mapping (kept as provided)
   const languageNames = {
-    'eng': 'English',
-    'spa': 'Spanish',
-    'fra': 'French',
-    'deu': 'German',
-    'ita': 'Italian',
-    'por': 'Portuguese',
-    'rus': 'Russian',
-    'jpn': 'Japanese',
-    'kor': 'Korean',
-    'cmn': 'Chinese',
-    'hin': 'Hindi',
-    'arb': 'Arabic',
-    'ben': 'Bengali',
-    'tel': 'Telugu',
-    'tam': 'Tamil',
-    'mar': 'Marathi',
-    'urd': 'Urdu'
+    'eng': 'English', 'spa': 'Spanish', 'fra': 'French', 'deu': 'German',
+    'ita': 'Italian', 'por': 'Portuguese', 'rus': 'Russian', 'jpn': 'Japanese',
+    'kor': 'Korean', 'cmn': 'Chinese', 'hin': 'Hindi', 'arb': 'Arabic',
+    'ben': 'Bengali', 'tel': 'Telugu', 'tam': 'Tamil', 'mar': 'Marathi', 'urd': 'Urdu'
   };
 
   // Create story on mount if new
@@ -79,12 +68,10 @@ const StoryEditor = ({
   useEffect(() => {
     if (!storyId) return;
 
-    // Clear existing timer
     if (autoSaveTimer.current) {
       clearTimeout(autoSaveTimer.current);
     }
 
-    // Set new timer (save after 2 seconds of inactivity)
     if (inputText && inputText !== initialDraftText.current) {
       hasUnsavedChanges.current = true;
       setAutoSaveStatus('⏳ Saving...');
@@ -116,7 +103,7 @@ const StoryEditor = ({
     };
   }, [inputText, storyId]);
 
-  // Detect language when user types
+  // Detect language
   useEffect(() => {
     const detectLanguageFromText = async (text) => {
       try {
@@ -136,7 +123,6 @@ const StoryEditor = ({
   useEffect(() => {
     const saveDraftOnUnmount = async () => {
       if (!storyId || !inputText) return;
-
       try {
         await axios.put(`${API_URL}/stories/${storyId}/draft`, {
           draftText: inputText
@@ -153,12 +139,6 @@ const StoryEditor = ({
     };
   }, [storyId, inputText]);
 
-
-
-
-
-
-
   const handleGrammarCheck = async () => {
     if (!inputText.trim()) return;
 
@@ -171,7 +151,6 @@ const StoryEditor = ({
       });
       setSuggestions(response.data);
       
-      // Update detected language from response
       if (response.data.detectedLanguage) {
         setLanguageName(response.data.detectedLanguage);
       }
@@ -196,7 +175,6 @@ const StoryEditor = ({
 
     setLoading(true);
     try {
-      // Add scene to story
       const response = await axios.post(`${API_URL}/stories/${storyId}/scenes`, {
         text: inputText,
         fromChoice: null
@@ -234,7 +212,6 @@ const StoryEditor = ({
       });
       setChoices(response.data.choices);
       
-      // Update language from response
       if (response.data.detectedLanguage) {
         setLanguageName(response.data.detectedLanguage);
       }
@@ -257,7 +234,6 @@ const StoryEditor = ({
         storyId
       });
 
-      // Add the generated scene
       const addResponse = await axios.post(`${API_URL}/stories/${storyId}/scenes`, {
         text: response.data.continuation,
         fromChoice: choice.title
@@ -268,7 +244,6 @@ const StoryEditor = ({
       setShowChoices(false);
       setChoices(null);
       
-      // Update language
       if (response.data.detectedLanguage) {
         setLanguageName(response.data.detectedLanguage);
       }
@@ -277,6 +252,85 @@ const StoryEditor = ({
       alert('Failed to continue scene. Make sure backend is running!');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // --- FIXED DELETE FUNCTION ---
+  const handleDeleteScene = async (sceneIndex) => {
+    // Ensure we're not deleting while editing
+    if (editingSceneId !== null) {
+      setEditingSceneId(null);
+      setEditedText('');
+    }
+
+    // 1. Optimistic Update (Update UI immediately) - Use index instead of id
+    const updatedStory = story.filter((scene, index) => index !== sceneIndex);
+    setStory(updatedStory);
+
+    // 2. Sync with Backend
+    try {
+      await axios.put(`${API_URL}/stories/${storyId}`, {
+        title: storyTitle,
+        scenes: updatedStory,
+        status: updatedStory.length > 0 ? 'in-progress' : 'draft'
+      });
+    } catch (error) {
+      console.error('Failed to delete scene:', error);
+      alert('Failed to delete scene from server.');
+      // Revert on error - fetch original story
+      try {
+        const response = await axios.get(`${API_URL}/stories/${storyId}`);
+        setStory(response.data.story.scenes);
+      } catch (fetchError) {
+        console.error('Failed to revert:', fetchError);
+      }
+    }
+  };
+
+  const handleEditScene = async (scene, sceneIndex) => {
+    // If another scene is being edited, save it first
+    if (editingSceneId !== null && editingSceneId !== sceneIndex) {
+      await handleSaveEdit(editingSceneId);
+    }
+    
+    setEditingSceneId(sceneIndex);
+    setEditedText(scene.text);
+  };
+
+  // --- FIXED SAVE EDIT FUNCTION ---
+  const handleSaveEdit = async (sceneIndex) => {
+    if (sceneIndex === null || sceneIndex === undefined) return;
+    
+    // 1. Optimistic Update - Use index instead of id
+    const updatedStory = story.map((scene, index) =>
+      index === sceneIndex
+        ? { ...scene, text: editedText }
+        : scene
+    );
+
+    setStory(updatedStory);
+    setEditingSceneId(null);
+    setEditedText('');
+
+    // 2. Sync with Backend
+    try {
+      await axios.put(`${API_URL}/stories/${storyId}`, {
+        title: storyTitle,
+        scenes: updatedStory,
+        status: 'in-progress'
+      });
+    } catch (error) {
+      console.error('Update scene error:', error);
+      alert('Failed to save changes to server.');
+      // Revert on error - fetch original story
+      try {
+        const response = await axios.get(`${API_URL}/stories/${storyId}`);
+        setStory(response.data.story.scenes);
+        setEditingSceneId(null);
+        setEditedText('');
+      } catch (fetchError) {
+        console.error('Failed to revert:', fetchError);
+      }
     }
   };
 
@@ -364,8 +418,8 @@ const StoryEditor = ({
             placeholder="Story Title"
           />
           <div className="story-meta">
-            <span className="mode-badge"> {mode}</span>
-            <span className="language-badge"> {languageName}</span>
+            <span className="mode-badge">✍️ {mode}</span>
+            <span className="language-badge">🌍 {languageName}</span>
             {autoSaveStatus && <span className="auto-save-status">{autoSaveStatus}</span>}
             {lastSaved && !autoSaveStatus && (
               <span className="last-saved">Last saved {formatLastSaved()}</span>
@@ -378,21 +432,45 @@ const StoryEditor = ({
       <div className="editor-layout">
         {/* Left: Story Draft */}
         <div className="story-draft">
-          <h3> {t('yourStory')}</h3>
+          <h3>📚 {t('yourStory')}</h3>
           <div className="story-content">
             {story.length === 0 ? (
               <p className="empty-state">{t('emptyStory')}</p>
             ) : (
               story.map((scene, index) => (
-                <div key={scene._id || index} className="scene">
+                <div key={index} className="scene">
                   <div className="scene-header">
                     <span className="scene-number">Scene {index + 1}</span>
                     {scene.fromChoice && <span className="scene-choice">→ {scene.fromChoice}</span>}
-                    {scene.language && (
-                      <span className="scene-language"> {languageNames[scene.language] || scene.language}</span>
-                    )}
                   </div>
-                  <p>{scene.text}</p>
+                  {editingSceneId === index ? (
+                    <>
+                      <textarea
+                        value={editedText}
+                        onChange={(e) => setEditedText(e.target.value)}
+                        rows={5}
+                        style={{ width: '100%', padding: '8px' }}
+                      />
+                      <button
+                        onClick={() => handleSaveEdit(index)}
+                        style={{ marginTop: '5px' }}
+                      >
+                        Save
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p>{scene.text}</p>
+                      <div className="scene-buttons">
+                        <button className="scene-btn edit-btn" onClick={() => handleEditScene(scene, index)}>
+                          Edit
+                        </button>
+                        <button className="scene-btn delete-btn" onClick={() => handleDeleteScene(index)}>
+                          Delete
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               ))
             )}
@@ -401,10 +479,10 @@ const StoryEditor = ({
           {story.length > 0 && (
             <div className="story-actions">
               <button onClick={handleDownloadPDF} className="download-button">
-                 {t('downloadPDF')}
+                📥 {t('downloadPDF')}
               </button>
               <button onClick={handleGenerateChoices} className="choices-button" disabled={loading}>
-                {loading ? t('generating') : ` ${t('generateChoices')}`}
+                {loading ? t('generating') : `🎲 ${t('generateChoices')}`}
               </button>
             </div>
           )}
@@ -415,12 +493,12 @@ const StoryEditor = ({
           {!showChoices ? (
             <>
               <div className="editor-panel-header">
-                <h3> {t('writeScene')}</h3>
+                <h3>✏️ {t('writeScene')}</h3>
                 <div className="language-info">
                   <span className="detected-lang-label">Writing in:</span>
                   <span className="detected-lang-value">{languageName}</span>
                   <span className="lang-hint">
-                    {languageName !== 'English' && ' AI will respond in the same language'}
+                    {languageName !== 'English' && '✨ AI will respond in the same language'}
                   </span>
                 </div>
               </div>
@@ -439,20 +517,20 @@ const StoryEditor = ({
                   disabled={loading || !inputText.trim()}
                   className="check-button"
                 >
-                  {loading ? t('checking') : ` ${t('checkImprove')}`}
+                  {loading ? t('checking') : `🔍 ${t('checkImprove')}`}
                 </button>
                 <button 
                   onClick={handleAddToStory}
                   disabled={!inputText.trim()}
                   className="add-button"
                 >
-                   {t('addToStory')}
+                  ✅ {t('addToStory')}
                 </button>
               </div>
 
               {suggestions && (
                 <div className="suggestions-panel">
-                  <h4> {t('aiSuggestions')}</h4>
+                  <h4>💡 {t('aiSuggestions')}</h4>
                   {suggestions.hasIssues ? (
                     <>
                       <div className="improved-text">
@@ -473,10 +551,10 @@ const StoryEditor = ({
                       )}
                       <div className="suggestion-actions">
                         <button onClick={handleAcceptSuggestion} className="accept-button">
-                           {t('acceptImprovements')}
+                          ✅ {t('acceptImprovements')}
                         </button>
                         <button onClick={() => setSuggestions(null)} className="dismiss-button">
-                           {t('keepOriginal')}
+                          ❌ {t('keepOriginal')}
                         </button>
                       </div>
                     </>
@@ -488,7 +566,7 @@ const StoryEditor = ({
             </>
           ) : (
             <div className="choices-panel">
-              <h3> {t('chooseYourPath')}</h3>
+              <h3>🎲 {t('chooseYourPath')}</h3>
               {loading ? (
                 <p className="loading">{t('generating')}</p>
               ) : choices ? (
