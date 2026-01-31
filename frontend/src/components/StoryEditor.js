@@ -364,8 +364,8 @@ const StoryEditor = ({
             placeholder="Story Title"
           />
           <div className="story-meta">
-            <span className="mode-badge">✍️ {mode}</span>
-            <span className="language-badge">🌍 {languageName}</span>
+            <span className="mode-badge"> {mode}</span>
+            <span className="language-badge"> {languageName}</span>
             {autoSaveStatus && <span className="auto-save-status">{autoSaveStatus}</span>}
             {lastSaved && !autoSaveStatus && (
               <span className="last-saved">Last saved {formatLastSaved()}</span>
@@ -378,7 +378,7 @@ const StoryEditor = ({
       <div className="editor-layout">
         {/* Left: Story Draft */}
         <div className="story-draft">
-          <h3>📚 {t('yourStory')}</h3>
+          <h3> {t('yourStory')}</h3>
           <div className="story-content">
             {story.length === 0 ? (
               <p className="empty-state">{t('emptyStory')}</p>
@@ -389,7 +389,7 @@ const StoryEditor = ({
                     <span className="scene-number">Scene {index + 1}</span>
                     {scene.fromChoice && <span className="scene-choice">→ {scene.fromChoice}</span>}
                     {scene.language && (
-                      <span className="scene-language">🌍 {languageNames[scene.language] || scene.language}</span>
+                      <span className="scene-language"> {languageNames[scene.language] || scene.language}</span>
                     )}
                   </div>
                   <p>{scene.text}</p>
@@ -401,10 +401,10 @@ const StoryEditor = ({
           {story.length > 0 && (
             <div className="story-actions">
               <button onClick={handleDownloadPDF} className="download-button">
-                📥 {t('downloadPDF')}
+                 {t('downloadPDF')}
               </button>
               <button onClick={handleGenerateChoices} className="choices-button" disabled={loading}>
-                {loading ? t('generating') : `🎲 ${t('generateChoices')}`}
+                {loading ? t('generating') : ` ${t('generateChoices')}`}
               </button>
             </div>
           )}
@@ -415,12 +415,12 @@ const StoryEditor = ({
           {!showChoices ? (
             <>
               <div className="editor-panel-header">
-                <h3>✏️ {t('writeScene')}</h3>
+                <h3> {t('writeScene')}</h3>
                 <div className="language-info">
                   <span className="detected-lang-label">Writing in:</span>
                   <span className="detected-lang-value">{languageName}</span>
                   <span className="lang-hint">
-                    {languageName !== 'English' && '✨ AI will respond in the same language'}
+                    {languageName !== 'English' && ' AI will respond in the same language'}
                   </span>
                 </div>
               </div>
@@ -439,20 +439,20 @@ const StoryEditor = ({
                   disabled={loading || !inputText.trim()}
                   className="check-button"
                 >
-                  {loading ? t('checking') : `🔍 ${t('checkImprove')}`}
+                  {loading ? t('checking') : ` ${t('checkImprove')}`}
                 </button>
                 <button 
                   onClick={handleAddToStory}
                   disabled={!inputText.trim()}
                   className="add-button"
                 >
-                  ✅ {t('addToStory')}
+                   {t('addToStory')}
                 </button>
               </div>
 
               {suggestions && (
                 <div className="suggestions-panel">
-                  <h4>💡 {t('aiSuggestions')}</h4>
+                  <h4> {t('aiSuggestions')}</h4>
                   {suggestions.hasIssues ? (
                     <>
                       <div className="improved-text">
@@ -473,10 +473,10 @@ const StoryEditor = ({
                       )}
                       <div className="suggestion-actions">
                         <button onClick={handleAcceptSuggestion} className="accept-button">
-                          ✅ {t('acceptImprovements')}
+                           {t('acceptImprovements')}
                         </button>
                         <button onClick={() => setSuggestions(null)} className="dismiss-button">
-                          ❌ {t('keepOriginal')}
+                           {t('keepOriginal')}
                         </button>
                       </div>
                     </>
@@ -488,7 +488,7 @@ const StoryEditor = ({
             </>
           ) : (
             <div className="choices-panel">
-              <h3>🎲 {t('chooseYourPath')}</h3>
+              <h3> {t('chooseYourPath')}</h3>
               {loading ? (
                 <p className="loading">{t('generating')}</p>
               ) : choices ? (

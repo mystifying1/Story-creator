@@ -51,7 +51,7 @@ const StoryList = ({ onLoadStory, onClose }) => {
     <div className="story-list-overlay" onClick={onClose}>
       <div className="story-list-modal" onClick={(e) => e.stopPropagation()}>
         <div className="story-list-header">
-          <h2>📚 {t('myStories')}</h2>
+          <h2> {t('myStories')}</h2>
           <button className="close-button" onClick={onClose}>✕</button>
         </div>
 
@@ -71,14 +71,14 @@ const StoryList = ({ onLoadStory, onClose }) => {
                   
                   <div className="story-card-info">
                     <p className="story-scenes">
-                      📝 {story.scenes.length} scene{story.scenes.length !== 1 ? 's' : ''}
+                       {story.scenes.length} scene{story.scenes.length !== 1 ? 's' : ''}
                     </p>
                     <p className="story-date">
-                      🕒 {formatDate(story.updatedAt)}
+                       {formatDate(story.updatedAt)}
                     </p>
                     {story.detectedLanguage && story.detectedLanguage !== 'eng' && (
                       <p className="story-language">
-                        🌍 {story.detectedLanguage.toUpperCase()}
+                         {story.detectedLanguage.toUpperCase()}
                       </p>
                     )}
                   </div>
@@ -97,13 +97,13 @@ const StoryList = ({ onLoadStory, onClose }) => {
                         onClose();
                       }}
                     >
-                      📖 {t('loadStory')}
+                       {t('loadStory')}
                     </button>
                     <button 
                       className="delete-button"
                       onClick={() => handleDeleteStory(story._id)}
                     >
-                      🗑️ {t('deleteStory')}
+                       {t('deleteStory')}
                     </button>
                   </div>
                 </div>

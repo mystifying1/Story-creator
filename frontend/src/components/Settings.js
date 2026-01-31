@@ -26,21 +26,21 @@ const Settings = ({ onClose }) => {
     <div className="settings-overlay" onClick={onClose}>
       <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
         <div className="settings-header">
-          <h2>⚙️ {t('settings')}</h2>
+          <h2> {t('settings')}</h2>
           <button className="close-button" onClick={onClose}>✕</button>
         </div>
 
         <div className="settings-content">
           {/* User Info */}
           <div className="settings-section">
-            <h3>👤 User</h3>
+            <h3> User</h3>
             <p><strong>Username:</strong> {user?.username}</p>
             <p><strong>Email:</strong> {user?.email}</p>
           </div>
 
           {/* Dark Mode Toggle */}
           <div className="settings-section">
-            <h3>🌙 {t('darkMode')}</h3>
+            <h3> {t('darkMode')}</h3>
             <label className="toggle-switch">
               <input
                 type="checkbox"
@@ -53,7 +53,7 @@ const Settings = ({ onClose }) => {
 
           {/* Language Selection */}
           <div className="settings-section">
-            <h3>🌍 {t('language')}</h3>
+            <h3> {t('language')}</h3>
             <div className="language-grid">
               {languages.map((lang) => (
                 <div
