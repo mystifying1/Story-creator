@@ -36,3 +36,22 @@ Mistral AI (LLM), Stable Diffusion
 
 **Authentication & Security:**  
 JWT, bcrypt  
+
+##  My Contributions
+
+- Contributed to the development of core features of the storytelling platform  
+- Worked on integrating frontend and backend components  
+- Assisted in implementing authentication and secure user workflows  
+- Supported AI feature integration and system functionality  
+- Participated in testing and improving overall user experience
+  
+##  Team Contribution
+
+This project was developed as part of a team during the Infosys Springboard Internship 6.0.
+
+This repository represents my individual contributions. Additional features were implemented in the final team version.
+##  Additional Reference
+
+-  Final Team Repository: https://github.com/JeslynJ/Story-creator
+
+This repository contains the final version of the project with additional features developed collaboratively during the internship.
