@@ -19,3 +19,20 @@ The platform enables users to co-create stories using AI, generate visuals from 
 -  Multilingual storytelling support  
 -  Secure authentication with JWT  
 -  Persistent story storage using MongoDB  
+
+##  Tech Stack
+
+**Frontend:**  
+React.js, Axios, Context API, CSS  
+
+**Backend:**  
+Node.js, Express.js  
+
+**Database:**  
+MongoDB Atlas, Mongoose  
+
+**AI Integration:**  
+Mistral AI (LLM), Stable Diffusion  
+
+**Authentication & Security:**  
+JWT, bcrypt  
